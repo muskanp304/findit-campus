@@ -1,0 +1,29 @@
+# Git
+.git
+.gitignore
+
+# Node dependencies and build artifacts
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.oxlintrc.json
+
+# DevOps & CI/CD artifacts
+.github
+reports
+*.md
+!README.md
+devops

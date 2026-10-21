@@ -1,0 +1,159 @@
+name: End-to-End DevOps CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  # ============================================================
+  # Stage 1: Static Code Analysis & Linting
+  # ============================================================
+  code-quality:
+    name: 🔍 Code Quality & Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Execute Oxlint Static Analysis
+        run: npm run lint
+
+  # ============================================================
+  # Stage 2: Automated Testing
+  # ============================================================
+  automated-tests:
+    name: 🧪 Automated Unit & Pipeline Tests
+    runs-on: ubuntu-latest
+    needs: code-quality
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Run Pipeline Validation Tests
+        run: npm test
+
+  # ============================================================
+  # Stage 3: Automated Build & Packaging
+  # ============================================================
+  build:
+    name: 📦 Production Build & Asset Packaging
+    runs-on: ubuntu-latest
+    needs: automated-tests
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Build Production Assets with Vite
+        run: npm run build
+
+      - name: Verify Build Artifacts
+        run: |
+          test -d dist || { echo "dist directory missing!"; exit 1; }
+          test -f dist/index.html || { echo "index.html missing!"; exit 1; }
+          echo "Build successful! Assets created:"
+          ls -lh dist
+
+      - name: Archive Production Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: findit-campus-dist
+          path: dist/
+          retention-days: 7
+
+  # ============================================================
+  # Stage 4: Docker Containerization & Smoke Testing
+  # ============================================================
+  containerize:
+    name: 🐳 Docker Containerization
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: actions/setup-buildx-action@v3
+
+      - name: Build Docker Container Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: findit-campus:latest,findit-campus:${{ github.sha }}
+          load: true
+
+      - name: Test Container Execution & Healthcheck
+        run: |
+          echo "Starting Docker container for smoke testing..."
+          docker run -d --name test-container -p 8080:80 findit-campus:latest
+          sleep 4
+          docker ps
+          echo "Verifying HTTP response from container..."
+          curl -I http://127.0.0.1:8080/
+          echo "Verifying healthcheck endpoint..."
+          curl -s http://127.0.0.1:8080/healthz
+          echo "Cleaning up test container..."
+          docker stop test-container
+          docker rm test-container
+
+  # ============================================================
+  # Stage 5: Deployment Verification & Notification
+  # ============================================================
+  deployment-status:
+    name: 🚀 Deployment Verification & Status Summary
+    runs-on: ubuntu-latest
+    needs: [containerize]
+    steps:
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: findit-campus-dist
+          path: dist
+
+      - name: DevOps Pipeline Execution Summary
+        run: |
+          echo "=========================================================="
+          echo "  FindIt Campus DevOps Pipeline Completed Successfully!  "
+          echo "=========================================================="
+          echo "Commit SHA    : ${{ github.sha }}"
+          echo "Triggered By  : ${{ github.actor }}"
+          echo "Ref Branch    : ${{ github.ref }}"
+          echo "Artifact Size :"
+          du -sh dist
+          echo "=========================================================="

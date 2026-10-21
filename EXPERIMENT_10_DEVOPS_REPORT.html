@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Experiment 10: End-to-End DevOps Pipeline Report | FindIt Campus</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #eff6ff;
+      --success: #16a34a;
+      --success-light: #f0fdf4;
+      --warning: #d97706;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --code-bg: #0f172a;
+      --code-text: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text-main);
+      background-color: var(--bg);
+      line-height: 1.6;
+      padding: 30px 15px;
+    }
+
+    .report-container {
+      max-width: 960px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      padding: 50px 60px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+      border: 1px solid var(--border);
+    }
+
+    .top-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .badge-success {
+      background: var(--success-light);
+      color: var(--success);
+    }
+
+    .btn-print {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-print:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    .header-banner {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header-banner h1 {
+      font-size: 28px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .header-banner h2 {
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .meta-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 35px;
+      background: #f1f5f9;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .meta-table td {
+      padding: 12px 18px;
+      border: 1px solid #e2e8f0;
+      font-size: 14px;
+    }
+
+    .meta-table td.label {
+      font-weight: 600;
+      width: 25%;
+      color: #334155;
+      background: #e2e8f0;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 35px 0 15px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 8px;
+    }
+
+    .pipeline-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .pipeline-step {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+      position: relative;
+    }
+
+    .pipeline-step .icon {
+      font-size: 24px;
+      margin-bottom: 6px;
+    }
+
+    .pipeline-step .step-num {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+    }
+
+    .pipeline-step .title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-top: 2px;
+    }
+
+    .pipeline-step .desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 14px;
+    }
+
+    .table th, .table td {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      text-align: left;
+    }
+
+    .table th {
+      background: #f1f5f9;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      padding: 16px 20px;
+      border-radius: 10px;
+      overflow-x: auto;
+      font-size: 13px;
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      margin: 12px 0 20px 0;
+      line-height: 1.5;
+    }
+
+    .screenshot-card {
+      border: 2px dashed #94a3b8;
+      border-radius: 12px;
+      padding: 25px;
+      background: #f8fafc;
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .screenshot-card .title {
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 6px;
+    }
+
+    .screenshot-card .caption {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .qa-box {
+      background: #f8fafc;
+      border-left: 4px solid var(--primary);
+      padding: 14px 18px;
+      margin-bottom: 14px;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .qa-box strong {
+      color: #0f172a;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .sign-box {
+      margin-top: 50px;
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid var(--border);
+      padding-top: 30px;
+      font-size: 14px;
+    }
+
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+      }
+      .report-container {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        max-width: 100%;
+      }
+      .btn-print, .top-actions {
+        display: none !important;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="report-container">
+    
+    <div class="top-actions">
+      <div>
+        <span class="badge">Experiment #10</span>
+        <span class="badge badge-success" style="margin-left: 8px;">DevOps End-to-End Pipeline</span>
+      </div>
+      <button class="btn-print" onclick="window.print()">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2m-8 0h8v4H8v-4z"></path></svg>
+        Save / Print as PDF
+      </button>
+    </div>
+
+    <div class="header-banner">
+      <h1>EXPERIMENT 10: END-TO-END DEVOPS PIPELINE</h1>
+      <h2>Design, Implementation, Containerization & CI/CD Deployment for FindIt Campus</h2>
+    </div>
+
+    <table class="meta-table">
+      <tr>
+        <td class="label">Course Name</td>
+        <td>DevOps & Cloud Engineering Laboratory</td>
+        <td class="label">Course Code</td>
+        <td>CS801 / IT602</td>
+      </tr>
+      <tr>
+        <td class="label">Student Name</td>
+        <td><strong>[Your Name]</strong></td>
+        <td class="label">Roll / ERP ID</td>
+        <td><strong>[Your Roll Number / ERP ID]</strong></td>
+      </tr>
+      <tr>
+        <td class="label">Department / Branch</td>
+        <td>Computer Science & Engineering</td>
+        <td class="label">Academic Year</td>
+        <td>2025 – 2026</td>
+      </tr>
+      <tr>
+        <td class="label">Project Title</td>
+        <td>FindIt Campus (Smart Lost & Found Portal)</td>
+        <td class="label">Pipeline Engine</td>
+        <td>GitHub Actions, Jenkins, Docker, Nginx</td>
+      </tr>
+    </table>
+
+    <h3 class="section-title">1. Aim of the Experiment</h3>
+    <p>To design, configure, and implement an end-to-end automated DevOps pipeline for a full-stack mini project (<em>FindIt Campus</em>) using <strong>Git, GitHub, GitHub Actions / Jenkins, Docker, and Nginx</strong>. The pipeline incorporates version control, static code analysis, automated testing, production build optimization, multi-stage Docker containerization, and automated deployment.</p>
+
+    <h3 class="section-title">2. Objectives</h3>
+    <ul style="padding-left: 20px; margin-top: 8px;">
+      <li>Establish a Git-based version control strategy with branch protection and pull request workflows.</li>
+      <li>Implement automated static code quality analysis and linting gates using <code>oxlint</code>.</li>
+      <li>Implement automated unit and smoke testing using Node.js built-in test runner.</li>
+      <li>Implement an optimized multi-stage <code>Dockerfile</code> converting a React + Vite application into an ultra-lean Nginx container.</li>
+      <li>Automate CI/CD pipelines through GitHub Actions (<code>.github/workflows/ci-cd-pipeline.yml</code>) and <code>Jenkinsfile</code>.</li>
+      <li>Validate containerized deployment and health endpoints via Docker Compose.</li>
+    </ul>
+
+    <h3 class="section-title">3. Architecture of the DevOps Pipeline</h3>
+    <div class="pipeline-grid">
+      <div class="pipeline-step">
+        <div class="icon">🌿</div>
+        <div class="step-num">Stage 1</div>
+        <div class="title">Version Control</div>
+        <div class="desc">Git commits & GitHub remote push</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="icon">🔍</div>
+        <div class="step-num">Stage 2</div>
+        <div class="title">Code Quality</div>
+        <div class="desc">Oxlint static AST analysis</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="icon">🧪</div>
+        <div class="step-num">Stage 3</div>
+        <div class="title">Automated Tests</div>
+        <div class="desc">5/5 Node unit & smoke tests</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="icon">📦</div>
+        <div class="step-num">Stage 4</div>
+        <div class="title">Production Build</div>
+        <div class="desc">Vite bundling & asset minification</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="icon">🐳</div>
+        <div class="step-num">Stage 5</div>
+        <div class="title">Docker Packaging</div>
+        <div class="desc">Multi-stage Nginx Alpine image</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="icon">🚀</div>
+        <div class="step-num">Stage 6</div>
+        <div class="title">Deployment</div>
+        <div class="desc">Live container at port 8080</div>
+      </div>
+    </div>
+
+    <h3 class="section-title">4. Tools and Technologies Stack</h3>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Pipeline Role</th>
+          <th>Technology</th>
+          <th>Functionality</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Version Control</strong></td>
+          <td>Git & GitHub</td>
+          <td>Distributed source tracking, branch merges, and remote webhooks.</td>
+        </tr>
+        <tr>
+          <td><strong>Continuous Integration</strong></td>
+          <td>GitHub Actions & Jenkins</td>
+          <td>Parallel jobs for automated quality gate, test suite, and image generation.</td>
+        </tr>
+        <tr>
+          <td><strong>Static Analysis</strong></td>
+          <td>Oxlint</td>
+          <td>Rust-powered lightning linter preventing syntax defects.</td>
+        </tr>
+        <tr>
+          <td><strong>Automated Testing</strong></td>
+          <td>Node.js Test Runner (v22+)</td>
+          <td>Native unit tests verifying config integrity, routing, and Docker files.</td>
+        </tr>
+        <tr>
+          <td><strong>Production Server</strong></td>
+          <td>Nginx 1.27 Alpine</td>
+          <td>SPA routing fallback, gzip compression, and HTTP healthcheck.</td>
+        </tr>
+        <tr>
+          <td><strong>Container Orchestrator</strong></td>
+          <td>Docker & Docker Compose</td>
+          <td>Multi-stage containerization isolating production runtime from dev build tools.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3 class="section-title">5. Core Configuration Files</h3>
+    
+    <p><strong>A. Multi-Stage Dockerfile (<code>Dockerfile</code>):</strong></p>
+    <pre><code># Stage 1: Build Environment
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci || npm install
+COPY . .
+RUN npm run build
+
+# Stage 2: Production Nginx Runtime
+FROM nginx:1.27-alpine AS runner
+RUN rm -rf /usr/share/nginx/html/*
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://127.0.0.1:80/ || exit 1
+CMD ["nginx", "-g", "daemon off;"]</code></pre>
+
+    <p><strong>B. Nginx Single-Page Application Configuration (<code>nginx.conf</code>):</strong></p>
+    <pre><code>server {
+    listen 80;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    gzip on;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+
+    location ~* \.(?:css|js|jpg|jpeg|png|svg|woff2)$ {
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    # SPA Client-Side Routing Fallback
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Health Check Endpoint
+    location /healthz {
+        return 200 '{"status":"healthy","service":"findit-campus"}';
+        add_header Content-Type application/json;
+    }
+}</code></pre>
+
+    <h3 class="section-title">6. Execution & Verification Outputs</h3>
+    <p><strong>DevOps Automated Test Output (<code>npm test</code>):</strong></p>
+    <pre><code>> findit-campus@0.0.0 test
+> node --test tests/pipeline.test.js
+
+✔ DevOps Pipeline - Project Metadata & Dependencies (2.5279ms)
+✔ DevOps Pipeline - Core Application Architecture (3.6809ms)
+✔ DevOps Pipeline - Containerization Configuration (1.3616ms)
+✔ DevOps Pipeline - CI/CD Workflow Specifications (1.0396ms)
+✔ DevOps Pipeline - Production Web Server Routing Configuration (0.743ms)
+ℹ tests 5 | pass 5 | fail 0
+ℹ duration_ms 206.5978
+[PASS] All automated tests passed successfully!</code></pre>
+
+    <p><strong>Production Build Output (<code>npm run build</code>):</strong></p>
+    <pre><code>vite v8.3.1 building client environment for production...
+transforming...
+✓ 1910 modules transformed.
+rendering chunks...
+dist/index.html                   0.46 kB │ gzip:   0.29 kB
+dist/assets/index-n19BwTcE.css    5.74 kB │ gzip:   1.91 kB
+dist/assets/index-Dpotz-1r.js   925.69 kB │ gzip: 243.41 kB
+✓ built in 1.21s</code></pre>
+
+    <h3 class="section-title">7. Evaluation & Demonstration Screenshots</h3>
+    
+    <div class="screenshot-card">
+      <div class="title">📸 Screenshot 1: Passing Automated Test Suite & Build Verification</div>
+      <div class="caption">Terminal showing <code>npm test</code> and <code>npm run build</code> completing with 0 errors and generated <code>dist/</code> assets.</div>
+    </div>
+
+    <div class="screenshot-card">
+      <div class="title">📸 Screenshot 2: GitHub Actions CI/CD Pipeline Dashboard</div>
+      <div class="caption">GitHub repository Actions tab showing green checkmarks across all 5 jobs (Lint, Test, Build, Containerize, Deploy).</div>
+    </div>
+
+    <div class="screenshot-card">
+      <div class="title">📸 Screenshot 3: Running Docker Container on Port 8080</div>
+      <div class="caption">Terminal showing <code>docker ps</code> with <code>findit_campus_prod</code> running healthy, alongside browser display of FindIt Campus.</div>
+    </div>
+
+    <h3 class="section-title">8. Viva Voce Questions & Answers</h3>
+    <div class="qa-box">
+      <strong>Q1: Why is multi-stage Docker build superior to a single-stage build for web apps?</strong>
+      Single-stage builds bundle Node.js runtimes, package managers, and large <code>node_modules</code> (often >800MB). Multi-stage builds compile assets in Stage 1 and discard the compiler, copying only static HTML/JS into a ~23MB Nginx Alpine container, dramatically improving speed, memory efficiency, and security.
+    </div>
+
+    <div class="qa-box">
+      <strong>Q2: Why is the <code>try_files $uri $uri/ /index.html;</code> directive essential in Nginx?</strong>
+      React utilizes client-side history API routing. When a user directly visits a path like <code>/dashboard</code>, Nginx would normally return a 404 since no physical folder exists. <code>try_files</code> directs Nginx to serve <code>index.html</code> as fallback, allowing React's router to render the correct view.
+    </div>
+
+    <div class="qa-box">
+      <strong>Q3: What role does a CI pipeline play before merging pull requests?</strong>
+      Continuous Integration executes automated linting and unit tests on every pull request. If tests or builds fail, the PR is automatically blocked from merging into <code>main</code>, preventing defects from reaching production.
+    </div>
+
+    <h3 class="section-title">9. Conclusion</h3>
+    <p>An end-to-end DevOps pipeline for the <strong>FindIt Campus</strong> project was successfully designed, implemented, and verified. The system demonstrates industry-standard practices including version control with Git/GitHub, automated static code analysis, unit testing, Vite production compilation, multi-stage Docker containerization, and continuous deployment orchestration via GitHub Actions and Jenkins.</p>
+
+    <div class="sign-box">
+      <div>
+        <strong>Student Signature:</strong> ______________________<br>
+        <strong>Date:</strong> October 2026
+      </div>
+      <div>
+        <strong>Evaluator Signature:</strong> ______________________<br>
+        <strong>Marks Awarded:</strong> _______ / 100
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
